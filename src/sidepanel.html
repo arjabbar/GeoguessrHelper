@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geoguessr Helper</title>
+    <link href="styles/output.css" rel="stylesheet">
+  </head>
+  <body class="flex flex-col items-center justify-start h-screen bg-gray-100 p-4"> <!-- BEGIN: Modify class to justify-start -->
+    <h1 class="text-3xl font-bold mb-4">Geoguessr Helper</h1>
+    
+    <div id="statusContainer">
+      <p id="status" class="text-sm">Warning: Using this extension may incur high costs (roughly $0.06 per screen capture). Please use it responsibly.</p>
+    </div>
+    
+    <img src="https://placehold.co/300x200?text=Screen\nPreview" id="screenshot" class="w-64 mb-4 border border-gray-500" />
+    
+    <div class="flex items-center">
+      <label class="mr-2">
+        <input type="radio" name="answerType" value="short">
+        Just Answer
+      </label>
+      <label>
+        <input type="radio" name="answerType" value="thorough" checked>
+        Explain Throughly
+      </label>
+    </div>
+    
+    <button id="captureButton" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2">Help me Out</button>
+    <p class="text-sm text-gray-500 mt-2">Hint: You can also press <span id="captureScreenHotkey">Alt+Shift+C</span> to trigger the action.</p>
+    
+    <p id="response" class="text-sm mt-4"></p>
+    
+    <script src="scripts/sidepanel.js"></script>
+  </body>
+</html>

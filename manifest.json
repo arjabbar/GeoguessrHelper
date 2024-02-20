@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Geoguessr Helper",
+  "version": "1.0",
+  "description": "A helper for Geoguessr. Someone that not only gives you the answers, but helps you to become better at Geoguessr. Think of it as a coach that can be as helpful as you want them to be and handoffs when you're ready to go solo.",
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "src/images/icon16.png",
+      "48": "src/images/icon48.png",
+      "128": "src/images/icon128.png"
+    }
+  },
+  "permissions": ["activeTab", "storage", "commands", "sidePanel", "tabs"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.geoguessr.com/*/*"],
+      "js": ["src/scripts/content.js"],
+      "run_at": "document_end",
+      "all_frames": true
+    }
+  ],
+  "side_panel": {
+    "default_path": "src/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "src/scripts/background.js"
+  },
+  "commands": {
+    "captureScreen": {
+      "suggested_key": {
+        "default": "Alt+Shift+C"
+      },
+      "description": "Look at the screen and capture the current state of the game."
+    }
+  }
+}

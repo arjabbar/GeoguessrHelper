@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        width: 300px;
+        padding: 25px;
+      }
+    </style>
+    <link href="styles/output.css" rel="stylesheet">
+  </head>
+  <body class="p-3 bg-gray-100 text-gray-800">
+    <h1 class="text-xl font-bold mb-3">Geoguessr Options!</h1>
+    <p class="mb-3 text-sm text-gray-600">Enter your Open AI API key to use Geoguessr Helper. This is <b class="underline">only saved locally</b> and your browser will communicate directly with Open AI.</p>
+    <div class="bg-yellow-200 text-yellow-800 p-3 mb-3">
+      <p class="text-sm">Warning: Using this extension may incur high costs (roughly $0.06 per screen capture). Please use it responsibly.</p>
+    </div>
+    
+    <form id="apiKeyForm" class="mb-3">
+      <input type="password" id="apiKey" placeholder="Open AI API Key" class="px-3 py-2 border rounded w-full" />
+      <button type="submit" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded w-full">Save API Key</button>
+    </form>
+    <button id="openSidePanel" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded w-full">Open Side Panel</button>
+    <script src="scripts/popup.js"></script>
+  </body>
+</html>

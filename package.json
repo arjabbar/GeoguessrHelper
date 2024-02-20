@@ -1,0 +1,15 @@
+{
+  "name": "geoguessrhelper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/scripts/background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chrome-types": "^0.1.267",
+    "tailwindcss": "^3.4.1"
+  }
+}
