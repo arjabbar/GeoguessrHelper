@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/scripts/background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "git archive --format zip --output ./archive.zip master"
   },
   "author": "",
   "license": "ISC",

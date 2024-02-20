@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Geoguessr Helper",
   "version": "1.0",
-  "description": "A helper for Geoguessr. Someone that not only gives you the answers, but helps you to become better at Geoguessr. Think of it as a coach that can be as helpful as you want them to be and handoffs when you're ready to go solo.",
+  "description": "A Geoguessr helper that improves your skills and provides answers.",
   "action": {
     "default_popup": "src/popup.html",
     "default_icon": {
