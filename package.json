@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/scripts/background.js",
   "scripts": {
-    "build": "git archive --format zip --output ./archive.zip master"
+    "build": "git archive --format zip --output ./archive.zip master",
+    "tailwind": "npx tailwindcss build -i ./src/styles/styles.css -o ./src/styles/output.css --watch"
   },
   "author": "",
   "license": "ISC",

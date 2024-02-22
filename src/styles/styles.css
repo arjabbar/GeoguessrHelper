@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes glowing {
+  0% {box-shadow: 0 0 2px #33ccff, 0 0 4px #33ccff, 0 0 6px #33ccff, 0 0 8px #33ccff;}
+  50% {box-shadow: 0 0 2px #33ccff, 0 0 4px #33ccff, 0 0 6px #33ccff, 0 0 8px #33ccff;}
+  100% {box-shadow: 0 0 2px #33ccff, 0 0 4px #33ccff, 0 0 6px #33ccff, 0 0 8px #33ccff;}
+}
+
+@keyframes blur {
+  0% {
+    filter: blur(5px);
+    opacity: 0;
+  }
+  100% {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+.glowing-border {
+  animation: glowing 1s infinite;
+  border: 2px solid #f0f0f0; /* Add a fallback border */
+}
+
+#response > span {
+  animation-delay: calc(var(--index) * 10ms);
+  animation-name: blur;
+  animation-duration: 500ms;
+  animation-fill-mode: backwards;
+}
+

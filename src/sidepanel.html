@@ -7,27 +7,30 @@
   <body class="flex flex-col items-center justify-start h-screen bg-gray-100 p-4"> <!-- BEGIN: Modify class to justify-start -->
     <h1 class="text-3xl font-bold mb-4">Geoguessr Helper</h1>
     
-    <div id="statusContainer">
-      <p id="status" class="text-sm">Warning: Using this extension may incur high costs (roughly $0.06 per screen capture). Please use it responsibly.</p>
+    <div id="statusContainer" class="p-3 mb-3 w-full inline-flex items-center px-3 py-0.5 text-sm font-medium bg-green-100 text-green-800">
+      <span id="status">
+      </span>
     </div>
     
-    <img src="https://placehold.co/300x200?text=Screen\nPreview" id="screenshot" class="w-64 mb-4 border border-gray-500" />
+    <img src="https://placehold.co/350x200?text=Screen\nPreview" id="screenshot" class="w-full mb-4 border border-gray-500" />
     
-    <div class="flex items-center">
-      <label class="mr-2">
-        <input type="radio" name="answerType" value="short">
-        Just Answer
-      </label>
-      <label>
-        <input type="radio" name="answerType" value="thorough" checked>
-        Explain Throughly
-      </label>
+    <div class="flex items-center gap-x-3">
+      <div class="inline-flex items-center">
+        <input id="answer-short" name="answerType" value="short" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600 inline-block">
+        <label for="answer-short" class="block text-sm font-medium leading-6 text-gray-900 inline-block ml-1">Just Answer</label>
+      </div>
+      <div class="inline-flex items-center">
+        <input id="answer-thorough" name="answerType" value="thorough" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600 inline-block" checked>
+        <label for="answer-thorough" class="block text-sm font-medium leading-6 text-gray-900 inline-block ml-1">Explain Thoroughly</label>
+      </div>
     </div>
     
     <button id="captureButton" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2">Help me Out</button>
-    <p class="text-sm text-gray-500 mt-2">Hint: You can also press <span id="captureScreenHotkey">Alt+Shift+C</span> to trigger the action.</p>
+    <p class="text-sm text-gray-500 mt-2">Hint: You can also press <span id="captureScreenHotkey">Alt+Shift+C</span> to trigger this action.</p>
     
-    <p id="response" class="text-sm mt-4"></p>
+    <div class="max-w-sm rounded overflow-hidden shadow-lg bg-white p-4 mt-4 w-full flex-grow overflow-y-auto">
+      <p id="response" class="text-gray-700 text-base"></p>
+    </div>
     
     <script src="scripts/sidepanel.js"></script>
   </body>

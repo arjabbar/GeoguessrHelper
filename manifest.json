@@ -12,14 +12,7 @@
     }
   },
   "permissions": ["activeTab", "storage", "commands", "sidePanel", "tabs"],
-  "content_scripts": [
-    {
-      "matches": ["https://www.geoguessr.com/*/*"],
-      "js": ["src/scripts/content.js"],
-      "run_at": "document_end",
-      "all_frames": true
-    }
-  ],
+  "host_permissions": ["<all_urls>"],
   "side_panel": {
     "default_path": "src/sidepanel.html"
   },

@@ -1,24 +1,46 @@
+const Elements = {
+  statusContainer: document.getElementById('statusContainer'),
+  status: document.getElementById('status'),
+  screenshotPreview: document.getElementById('screenshot'),
+  captureButton: document.getElementById('captureButton'),
+  response: document.getElementById('response'),
+  checkedRadioButton: document.querySelector('input[name="answerType"]:checked'),
+  hotkey: document.getElementById('captureScreenHotkey')
+};
+const originalCaptureButtonText = captureButton.textContent;
+
 function validateApiKey(key) {
     const apiKeyIsValid = key && key.length > 36 && key.startsWith('sk-');
-    var status = document.getElementById('status');
-    status.textContent = apiKeyIsValid ? 'Open AI API Key Enabled' : "Your API Key doesn't seem to be valid. Click the extension to update it.";
+    Elements.status.textContent = apiKeyIsValid ? 'Open AI API Key Enabled' : "Your API Key doesn't seem to be valid. Click the extension to update it.";
     
-    var statusContainer = document.getElementById('statusContainer');
-    statusContainer.classList = apiKeyIsValid ? 'bg-green-200 text-green-800 p-3 mb-3 w-full' : 'bg-yellow-200 text-yellow-800 p-3 mb-3 w-full';
+    Elements.statusContainer.classList.forEach(className => {
+      if (className.startsWith('bg-') || className.startsWith('text-')) {
+        Elements.statusContainer.classList.remove(className);
+      }
+    });
+
+    Elements.statusContainer.classList.add(apiKeyIsValid ? 'bg-green-200' : 'bg-yellow-200');
+    Elements.statusContainer.classList.add(apiKeyIsValid ? 'text-green-800' : 'text-yellow-800');
 }
 
-const captureButton = document.getElementById('captureButton');
-let captureButtonContent = captureButton.textContent;
+function setThinkingState(isThinking) {
+  Elements.captureButton.disabled = isThinking;
+  Elements.captureButton.textContent = isThinking ? 'Thinking...' : originalCaptureButtonText;
+  if (isThinking) {
+    Elements.screenshotPreview.classList.add('glowing-border');
+  } else {
+    Elements.screenshotPreview.classList.remove('glowing-border');
+  }
+}
 
-captureButton.addEventListener('click', function() {
-  captureButton.disabled = true;
-  captureButton.textContent = 'Thinking...';
+function setResponse(response) {
+  const words = response.split(' ');
+  Elements.response.innerHTML = words.map((word, index) => `<span style="--index: ${index}">${word}</span>`).join(' ');
+}
 
-  // Get the checked radio button
-  var checkedRadioButton = document.querySelector('input[name="answerType"]:checked');
-
+Elements.captureButton.addEventListener('click', function() {
   // Get the value of the checked radio button
-  var value = checkedRadioButton.value;
+  var value = Elements.checkedRadioButton.value;
 
   // send a message to the backend that the user wants to capture the screen
   chrome.runtime.sendMessage({message: "captureScreen", shortAnswer: value === 'short'});
@@ -37,19 +59,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('sidepanel.js', request.message);
   
   if (request.message === "updateScreenshot") {
-    document.getElementById('screenshot').src = request.dataUrl;
+    Elements.screenshotPreview.src = request.dataUrl;
+  }
+
+  if (request.message === "startThinking") {
+    setThinkingState(true);
+    setResponse('');
   }
 
   if (request.message === "captureResponseReceived") {
-    captureButton.disabled = false;
-    captureButton.textContent = captureButtonContent;
+    setThinkingState(false);
 
     if (request.response) {
-      document.getElementById('response').textContent = request.response;
+      setResponse(request.response);
     }
 
     if (request.error) {
-      document.getElementById('response').textContent = 'Failed to capture screenshot.';
+      setResponse('Failed to capture screenshot.');
     }
   }
 });
@@ -65,7 +91,7 @@ window.onload = function() {
     });
 
     if (captureScreenCommand) {
-      document.getElementById('captureScreenHotkey').textContent = captureScreenCommand.shortcut;
+      Elements.hotkey.textContent = captureScreenCommand.shortcut;
     }
   });
   
