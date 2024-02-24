@@ -75,7 +75,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     }
 
     if (request.error) {
-      setResponse('Failed to capture screenshot.');
+      setResponse(`Failed to capture screenshot with error: ${request.error}`);
     }
   }
 });

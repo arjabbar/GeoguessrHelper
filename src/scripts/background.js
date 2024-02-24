@@ -81,6 +81,14 @@ async function getVisionResponse(dataUrl, shortAnswer) {
     body: requestBody,
     signal: abortController.signal
   });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error("You have exceeded your API token limit. Please check your Open AI account to ensure you haven't hit your usage limits.");
+    } else {
+      throw new Error(`Failed to get vision API response: ${response.status} ${response.statusText}`);
+    }
+  }
   
   /** @type VisionResponse */
   const json = await response.json();
@@ -109,13 +117,13 @@ chrome.runtime.onMessage.addListener(async function(request, sender, sendRespons
       chrome.runtime.sendMessage({message: "startThinking"});
 
       // Get the active tab's url and make sure that we're on the Geoguessr site
-      const tab = await chrome.tabs.query({active: true, currentWindow: true});
-      if (!isGeoguessr(tab[0].url)) {
+      const tab = (await chrome.tabs.query({active: true, currentWindow: true}))[0];
+      if (!isGeoguessr(tab.url)) {
         chrome.runtime.sendMessage({message: "captureResponseReceived", response: "This is not a Geoguessr website. Please navigate to a Geoguessr website to use this extension."});
         return true;
       }
 
-      const dataUrl = await chrome.tabs.captureVisibleTab(undefined, {format: "jpeg", quality: 80});
+      const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {format: "jpeg", quality: 80});
       console.log(dataUrl);
       chrome.runtime.sendMessage({message: "updateScreenshot", dataUrl: dataUrl});
   
@@ -127,7 +135,7 @@ chrome.runtime.onMessage.addListener(async function(request, sender, sendRespons
       chrome.runtime.sendMessage({message: "captureResponseReceived", response});
     } catch (error) {
       console.error('Failed to capture screenshot.', error);
-      chrome.runtime.sendMessage({message: "captureResponseReceived", error});
+      chrome.runtime.sendMessage({message: "captureResponseReceived", error: (error?.message || error)});
     }
   }
 
