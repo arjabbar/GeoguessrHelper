@@ -1,5 +1,8 @@
 const GEOGUESSR_ORIGIN = 'https://www.geoguessr.com/';
 
+const HTML_FORMATTING_INSTRUCTIONS = `Also your answer should use html to call out important parts of the response. For instance, if you are claiming that the location is in a specific region in a city, then go ahead and bold those parts of your response using the <b> HTML tags.
+  This is optional, so only include the html tags if you are certain it will add clarity for the user. Only use html tags like <b> and <i> and <br /> to add clarity to your response.`;
+
 /**
  * Retrieves the vision response from the OpenAI API.
  * 
@@ -24,16 +27,16 @@ const GEOGUESSR_ORIGIN = 'https://www.geoguessr.com/';
  */
 async function getVisionResponse(dataUrl, shortAnswer) {
   const { apiKey, maxTokens } = await chrome.storage.local.get(['apiKey', 'maxTokens']);
+
   const gptPrompt = shortAnswer ? `You are a master Geoguessr expert. I will send you a screenshot and I want you to concisely respond with where you think the locations could be.
   Give me your three best guesses, ranked from most confident to least confident. If you have absolutely no confidence in the answer, say so, but still give it your best shot.
-  Keep responses concise. No need to give insight into your answer, what led you to it, or anything else. Just what you think the location is.
-  If there is a quiz on the screen, just give it your best guess answer. Please, be as concise as possible. The user doesn't like to waste time and needs an answer immediately.` : `You are a helpful Geoguessr Coach. You are casual, a little stern and short, but always polite and respectful. You will help me find out where I am by analyzing the image.
+  Keep responses super concise. No need to give insight into your answer, what led you to it, tips or advice, or anything else. Just where you think the location is.
+  If there is a quiz on the screen, just give it your best guess answer. Please, be as concise as possible. The user doesn't like to waste time and needs an answer immediately. ${HTML_FORMATTING_INSTRUCTIONS}` : `You are a helpful Geoguessr Coach. You are casual, a little stern and short, but always polite and respectful. You will help me find out where I am by analyzing the image.
   If there are any signs or landmarks, please let me know how you use those to indicate where we are so I can become better at Geoguessr myself.
   If there are questions in the screenshot provided by the user, please help answer those as well. If you do not have enough information to answer the question, please let me know, but take a best guess at it anyway.
   Include only things that are relevant to the location in the image, and please be as specific and concise as possible.
   If you're answering a quiz question be even more concise. No need to wish me well, or ask how I'm doing, or anything like that. Just get to the point.
-  Also your answer should use html to call out important parts of the response. For instance, if you are claiming that the location is in a specific region in a city, then go ahead and bold those parts of your response using the <b> tags.
-  This is optional, so only include the html tags if you are certain it will add clarity for the user.
+  ${HTML_FORMATTING_INSTRUCTIONS}
   Thank you!`;
 
   const abortController = new AbortController();
@@ -41,7 +44,7 @@ async function getVisionResponse(dataUrl, shortAnswer) {
   setTimeout(() => abortController.abort(), 30000);
 
   const requestBody = JSON.stringify({
-    model: 'gpt-4-vision-preview',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'system',
@@ -57,7 +60,7 @@ async function getVisionResponse(dataUrl, shortAnswer) {
         content: [
           {
             type: 'text',
-            text: 'Help me with this on Goeguessr please!'
+            text: "Help me with this on Goeguessr please! Please respond in html format as if I'm going to render the output into a <div> tag." + (shortAnswer ? " I need a short answer." : "")
           },
           {
             type: 'image_url',
@@ -67,7 +70,8 @@ async function getVisionResponse(dataUrl, shortAnswer) {
             }
           }
         ]
-      }
+      },
+
     ],
     max_tokens: maxTokens || 300
   });
