@@ -1,7 +1,6 @@
 const GEOGUESSR_ORIGIN = 'https://www.geoguessr.com/';
 
-const HTML_FORMATTING_INSTRUCTIONS = `Also your answer should use html to call out important parts of the response. For instance, if you are claiming that the location is in a specific region in a city, then go ahead and bold those parts of your response using the <b> HTML tags.
-  This is optional, so only include the html tags if you are certain it will add clarity for the user. Only use html tags like <b> and <i> and <br /> to add clarity to your response.`;
+
 
 /**
  * Retrieves the vision response from the OpenAI API.
@@ -26,60 +25,104 @@ const HTML_FORMATTING_INSTRUCTIONS = `Also your answer should use html to call o
  * @property {number} choices.index - The index of the choice.
  */
 async function getVisionResponse(dataUrl, shortAnswer) {
-  const { apiKey, maxTokens } = await chrome.storage.local.get(['apiKey', 'maxTokens']);
+  const { apiKey, maxTokens, selectedModel } = await chrome.storage.local.get([
+    'apiKey',
+    'maxTokens',
+    'selectedModel'
+  ]);
 
-  const gptPrompt = shortAnswer ? `You are a master Geoguessr expert. I will send you a screenshot and I want you to concisely respond with where you think the locations could be.
-  Give me your three best guesses, ranked from most confident to least confident. If you have absolutely no confidence in the answer, say so, but still give it your best shot.
-  Keep responses super concise. No need to give insight into your answer, what led you to it, tips or advice, or anything else. Just where you think the location is.
-  If there is a quiz on the screen, just give it your best guess answer. Please, be as concise as possible. The user doesn't like to waste time and needs an answer immediately. ${HTML_FORMATTING_INSTRUCTIONS}` : `You are a helpful Geoguessr Coach. You are casual, a little stern and short, but always polite and respectful. You will help me find out where I am by analyzing the image.
-  If there are any signs or landmarks, please let me know how you use those to indicate where we are so I can become better at Geoguessr myself.
-  If there are questions in the screenshot provided by the user, please help answer those as well. If you do not have enough information to answer the question, please let me know, but take a best guess at it anyway.
-  Include only things that are relevant to the location in the image, and please be as specific and concise as possible.
-  If you're answering a quiz question be even more concise. No need to wish me well, or ask how I'm doing, or anything like that. Just get to the point.
-  ${HTML_FORMATTING_INSTRUCTIONS}
-  Thank you!`;
+  const gptPrompt = shortAnswer
+    ? `You are a master Geoguessr expert.
+Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do not include Markdown or HTML.`
+    : `You are a helpful Geoguessr Coach.
+Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do not include Markdown or HTML.`;
 
   const abortController = new AbortController();
-  // Abort the request after 20 seconds
+  // Abort the request after 30 seconds
   setTimeout(() => abortController.abort(), 30000);
 
+  // Different schema for short answers vs thorough answers
+  const schema = shortAnswer ? {
+    type: "object",
+    additionalProperties: false,
+    required: ["city", "region", "country"],
+    properties: {
+      city: { type: "string", description: "The most likely city name based on the screenshot" },
+      region: { type: "string", description: "The region/state/province" },
+      country: { type: "string", description: "The country" }
+    }
+  } : {
+    type: "object",
+    additionalProperties: false,
+    required: ["mode", "summary", "is_quiz", "quiz_answer", "guesses", "tips"],
+    properties: {
+      mode: { type: "string", enum: ["short","coach"] },
+      summary: { type: "string", description: "1–2 line overall take." },
+      is_quiz: { type: "boolean" },
+      quiz_answer: { type: "string" },
+      guesses: {
+        type: "array",
+        minItems: 1,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["label", "country", "region", "confidence", "reasons", "clues", "coordinates"],
+          properties: {
+            label:      { type: "string", description: "City/region/country or final guess label" },
+            country:    { type: "string" },
+            region:     { type: "string" },
+            confidence: { type: "number", minimum: 0, maximum: 1 },
+            reasons:    { type: "array", items: { type: "string" }, description: "Short bullets: why" },
+            clues:      { type: "array", items: { type: "string" }, description: "Evidence spotted" },
+            coordinates:{ type: "object", additionalProperties:false, required:["lat","lng"], properties:{
+              lat:{type:"number"}, lng:{type:"number"}
+            }}
+          }
+        }
+      },
+      tips: { type:"array", items:{ type:"string" }, description:"Coach mode: how to get better next time" }
+    }
+  };
+
+  const userPrompt = shortAnswer
+    ? "Look at this Geoguessr screenshot and identify the most likely location. Return the city, region, and country in the JSON format without any explanations or reasoning."
+    : "Analyze the screenshot and reply as JSON only. No commentary.";
+
   const requestBody = JSON.stringify({
-    model: 'gpt-4o',
-    messages: [
+    model: selectedModel || 'gpt-4.1-mini',
+    input: [
       {
         role: 'system',
-        content: [
-          {
-            type: 'text',
-            text: gptPrompt
-          }
-        ]
+        content: [{ type: 'input_text', text: gptPrompt }]
       },
       {
         role: 'user',
         content: [
           {
-            type: 'text',
-            text: "Help me with this on Goeguessr please! Please respond in html format as if I'm going to render the output into a <div> tag." + (shortAnswer ? " I need a short answer." : "")
+            type: 'input_text',
+            text: userPrompt
           },
-          {
-            type: 'image_url',
-            image_url: {
-              url: dataUrl,
-              detail: "auto"
-            }
-          }
+          // dataUrl is already a data: URI (jpeg base64) from captureVisibleTab
+          { type: 'input_image', image_url: dataUrl }
         ]
-      },
-
+      }
     ],
-    max_tokens: maxTokens || 300
+    max_output_tokens: maxTokens || 300,
+    text: {
+      format: {
+        type: "json_schema",
+        name: "geoguessr_response",
+        description: shortAnswer ? "Simple city name response" : "Structured location guesses from a Geoguessr screenshot",
+        schema: schema,
+        strict: true
+      }
+    }
   });
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
     body: requestBody,
@@ -88,18 +131,29 @@ async function getVisionResponse(dataUrl, shortAnswer) {
 
   if (!response.ok) {
     if (response.status === 429) {
-      throw new Error("You have exceeded your API token limit. Please check your Open AI account to ensure you haven't hit your usage limits.");
+      throw new Error(
+        "You have exceeded your API token limit. Please check your Open AI account to ensure you haven't hit your usage limits."
+      );
     } else {
       throw new Error(`Failed to get vision API response: ${response.status} ${response.statusText}`);
     }
   }
-  
-  /** @type VisionResponse */
+
   const json = await response.json();
 
-  console.info(json.usage.total_tokens, 'tokens used.');
-  
-  return json.choices[0].message.content;
+  // Usage fields differ slightly on Responses API but still include total tokens
+  console.info(json?.usage?.total_tokens, 'tokens used.');
+
+  // Prefer output_text helper; fall back to stitching output[].content[].text
+  const text =
+    json.output_text ??
+    (Array.isArray(json.output)
+      ? json.output
+          .map(m => (m.content || []).map(c => c.text || '').join(''))
+          .join('\n')
+      : '');
+
+  return text;
 };
 
 function isGeoguessr(url) {

@@ -19,7 +19,7 @@
     </span>
     
     <form id="apiKeyForm" class="mb-3">
-      <div class="relative">
+      <div class="relative mb-3">
         <input type="password" id="apiKey" placeholder="Open AI API Key" class="px-3 py-2 border rounded w-full" />
         <div id="savedKeyDisplay" class="hidden px-3 py-2 border rounded w-full bg-gray-50 text-gray-700 flex items-center justify-between">
           <span id="maskedKey" class="font-mono"></span>
@@ -29,7 +29,21 @@
           </div>
         </div>
       </div>
-      <button type="submit" id="submitBtn" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded w-full">Save API Key</button>
+      
+      <div class="mb-3">
+        <label for="modelSelect" class="block text-sm font-medium text-gray-700 mb-1">OpenAI Model:</label>
+        <select id="modelSelect" class="px-3 py-2 border rounded w-full bg-white">
+          <option value="gpt-4.1-mini">GPT-4.1 Mini (Default)</option>
+          <option value="gpt-4.1">GPT-4.1</option>
+          <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+          <option value="o4-mini">O4 Mini</option>
+          <option value="o3">O3</option>
+          <option value="o3-mini">O3 Mini</option>
+          <option value="o3-pro">O3 Pro</option>
+        </select>
+      </div>
+      
+      <button type="submit" id="submitBtn" class="mb-2 px-4 py-2 bg-blue-500 text-white rounded w-full">Save Settings</button>
     </form>
     <button id="openSidePanel" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded w-full">Open Side Panel</button>
     <script src="scripts/popup.js"></script>

@@ -8,10 +8,43 @@ const editKeyBtn = document.getElementById('editKeyBtn');
 const clearKeyBtn = document.getElementById('clearKeyBtn');
 const submitBtn = document.getElementById('submitBtn');
 const apiKeyForm = document.getElementById('apiKeyForm');
+const modelSelect = document.getElementById('modelSelect');
 
 // State
 let isEditMode = false;
 let savedApiKey = null;
+
+// Default available models
+const availableModels = [
+  { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini (Default)' },
+  { id: 'gpt-4.1', name: 'GPT-4.1' },
+  { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano' },
+  { id: 'o4-mini', name: 'O4 Mini' },
+  { id: 'o3', name: 'O3' },
+  { id: 'o3-mini', name: 'O3 Mini' },
+  { id: 'o3-pro', name: 'O3 Pro' }
+];
+
+// Helper function to populate model dropdown
+function populateModelDropdown(selectedModel = 'gpt-4.1-mini') {
+  // Clear existing options
+  modelSelect.innerHTML = '';
+  
+  // Add models to dropdown
+  availableModels.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.id;
+    option.textContent = model.name;
+    modelSelect.appendChild(option);
+  });
+  
+  // Set selected model, fallback to gpt-4.1-mini
+  if (availableModels.find(m => m.id === selectedModel)) {
+    modelSelect.value = selectedModel;
+  } else {
+    modelSelect.value = 'gpt-4.1-mini';
+  }
+}
 
 // Helper function to mask API key
 function maskApiKey(key) {
@@ -31,14 +64,14 @@ function updateUIState(apiKey) {
     maskedKeySpan.textContent = maskApiKey(apiKey);
     savedKeyDisplay.classList.remove('hidden');
     apiKeyInput.classList.add('hidden');
-    submitBtn.textContent = 'Update API Key';
+    submitBtn.textContent = 'Update Settings';
     submitBtn.classList.add('hidden');
   } else {
     // Show input, hide masked display
     savedKeyDisplay.classList.add('hidden');
     apiKeyInput.classList.remove('hidden');
     submitBtn.classList.remove('hidden');
-    submitBtn.textContent = 'Save API Key';
+    submitBtn.textContent = 'Save Settings';
     apiKeyInput.value = '';
   }
   
@@ -51,7 +84,7 @@ function enterEditMode() {
   savedKeyDisplay.classList.add('hidden');
   apiKeyInput.classList.remove('hidden');
   submitBtn.classList.remove('hidden');
-  submitBtn.textContent = 'Update API Key';
+  submitBtn.textContent = 'Update Settings';
   apiKeyInput.value = savedApiKey || '';
   apiKeyInput.focus();
   apiKeyInput.select();
@@ -77,11 +110,19 @@ editKeyBtn.addEventListener('click', function() {
 
 clearKeyBtn.addEventListener('click', function() {
   if (confirm('Are you sure you want to clear your saved API key?')) {
-    chrome.storage.local.remove('apiKey', function() {
-      console.log('apiKey cleared');
+    chrome.storage.local.remove(['apiKey', 'selectedModel'], function() {
+      console.log('apiKey and model cleared');
       updateUIState(null);
     });
   }
+});
+
+// Save model selection when it changes
+modelSelect.addEventListener('change', function() {
+  const selectedModel = modelSelect.value;
+  chrome.storage.local.set({ selectedModel: selectedModel }, function() {
+    console.log('Model updated to:', selectedModel);
+  });
 });
 
 apiKeyForm.addEventListener('submit', function(event) {
@@ -89,6 +130,7 @@ apiKeyForm.addEventListener('submit', function(event) {
   event.preventDefault();
   
   const apiKey = apiKeyInput.value.trim();
+  const selectedModel = modelSelect.value;
   
   if (!apiKey) {
     alert('Please enter a valid API key');
@@ -101,8 +143,11 @@ apiKeyForm.addEventListener('submit', function(event) {
     return;
   }
   
-  chrome.storage.local.set({apiKey: apiKey}, function() {
-    console.log('apiKey saved');
+  chrome.storage.local.set({
+    apiKey: apiKey,
+    selectedModel: selectedModel
+  }, function() {
+    console.log('apiKey and model saved', { apiKey: 'hidden', selectedModel });
     updateUIState(apiKey);
     
     // Show success message briefly
@@ -119,7 +164,10 @@ apiKeyForm.addEventListener('submit', function(event) {
   });
 });
 
-// Load saved API key on popup open
-chrome.storage.local.get('apiKey', function(data) {
+// Load saved API key and model on popup open
+chrome.storage.local.get(['apiKey', 'selectedModel'], function(data) {
   updateUIState(data.apiKey);
+  
+  // Set up models with saved selection or default to gpt-4.1-mini
+  populateModelDropdown(data.selectedModel || 'gpt-4.1-mini');
 });

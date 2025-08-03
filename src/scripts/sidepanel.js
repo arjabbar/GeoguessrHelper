@@ -4,7 +4,6 @@ const Elements = {
   screenshotPreview: document.getElementById('screenshot'),
   captureButton: document.getElementById('captureButton'),
   response: document.getElementById('response'),
-  checkedRadioButton: document.querySelector('input[name="answerType"]:checked'),
   hotkey: document.getElementById('captureScreenHotkey')
 };
 const originalCaptureButtonText = captureButton.textContent;
@@ -33,16 +32,89 @@ function setThinkingState(isThinking) {
   }
 }
 
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderFromJson(obj) {
+  const parts = [];
+
+  if (obj.summary) {
+    parts.push(`<p><i>${escapeHtml(obj.summary)}</i></p>`);
+  }
+
+  if (obj.is_quiz && obj.quiz_answer) {
+    parts.push(`<p><b>Quiz answer:</b> ${escapeHtml(obj.quiz_answer)}</p>`);
+  }
+
+  if (Array.isArray(obj.guesses) && obj.guesses.length) {
+    parts.push(`<ol>`);
+    for (const g of obj.guesses) {
+      const titleBits = [
+        g.label ? `<b>${escapeHtml(g.label)}</b>` : '',
+        g.region ? `, ${escapeHtml(g.region)}` : '',
+        g.country ? `, ${escapeHtml(g.country)}` : ''
+      ].join('');
+
+      const conf = typeof g.confidence === 'number'
+        ? ` <span style="opacity:.75">(${Math.round(g.confidence*100)}%)</span>` : '';
+
+      parts.push(`<li>${titleBits}${conf}`);
+
+      if (g.reasons?.length) {
+        parts.push(`<div><u>Why:</u><ul>${g.reasons.map(r=>`<li>${escapeHtml(r)}</li>`).join('')}</ul></div>`);
+      }
+      if (g.clues?.length) {
+        parts.push(`<div><u>Clues:</u> ${g.clues.map(escapeHtml).join('; ')}</div>`);
+      }
+      parts.push(`</li>`);
+    }
+    parts.push(`</ol>`);
+  }
+
+  if (obj.mode === 'coach' && obj.tips?.length) {
+    parts.push(`<p><b>Tips:</b></p><ul>${obj.tips.map(t=>`<li>${escapeHtml(t)}</li>`).join('')}</ul>`);
+  }
+
+  return parts.join('\n');
+}
+
 function setResponse(response) {
-  const words = response.split(' ');
-  Elements.response.innerHTML = words.map((word, index) => `<span style="--index: ${index}">${word}</span>`).join(' ');
+  if (!response) { Elements.response.innerHTML = ''; return; }
+
+  // If background returns JSON string, parse here.
+  let obj = null;
+  if (typeof response === 'string') {
+    try { obj = JSON.parse(response); } catch { /* legacy / plain text */ }
+  } else if (typeof response === 'object') {
+    obj = response;
+  }
+
+  // Handle simple location response for "Just Answer" mode
+  if (obj && obj.city && obj.region && obj.country && !obj.guesses) {
+    const locationParts = [
+      obj.city ? `<b>${escapeHtml(obj.city)}</b>` : '',
+      obj.region ? `, ${escapeHtml(obj.region)}` : '',
+      obj.country ? `, ${escapeHtml(obj.country)}` : ''
+    ].join('');
+    Elements.response.innerHTML = `<p>${locationParts}</p>`;
+    return;
+  }
+
+  // Handle detailed response for "Explain Thoroughly" mode
+  if (obj && obj.guesses) {
+    Elements.response.innerHTML = renderFromJson(obj);
+    return;
+  }
+
+  // Legacy: keep your per-word animation for plain text
+  const words = String(response).split(' ');
+  Elements.response.innerHTML = words.map((word, index) => `<span style="--index: ${index}">${escapeHtml(word)}</span>`).join(' ');
 }
 
 Elements.captureButton.addEventListener('click', function() {
-  // Get the value of the checked radio button
-  var value = Elements.checkedRadioButton.value;
-
-  // send a message to the backend that the user wants to capture the screen
+  const checked = document.querySelector('input[name="answerType"]:checked');
+  const value = checked ? checked.value : 'short';
   chrome.runtime.sendMessage({message: "captureScreen", shortAnswer: value === 'short'});
 });
 
