@@ -11,7 +11,7 @@ const originalCaptureButtonText = captureButton.textContent;
 
 function validateApiKey(key) {
     const apiKeyIsValid = key && key.length > 36 && key.startsWith('sk-');
-    Elements.status.textContent = apiKeyIsValid ? 'Open AI API Key Enabled' : "Your API Key doesn't seem to be valid. Click the extension to update it.";
+    Elements.status.textContent = apiKeyIsValid ? 'Open AI API Key Enabled' : "Your API Key doesn't seem to be valid. Click the extension icon to set or update it.";
     
     Elements.statusContainer.classList.forEach(className => {
       if (className.startsWith('bg-') || className.startsWith('text-')) {

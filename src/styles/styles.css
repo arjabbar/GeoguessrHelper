@@ -31,3 +31,42 @@
   animation-fill-mode: backwards;
 }
 
+/* Custom styles for API key display */
+#savedKeyDisplay {
+  transition: all 0.2s ease-in-out;
+}
+
+#savedKeyDisplay:hover {
+  background-color: #f9fafb;
+}
+
+#maskedKey {
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+#editKeyBtn {
+  transition: color 0.2s ease-in-out;
+}
+
+#editKeyBtn:hover {
+  text-decoration: underline;
+}
+
+#clearKeyBtn {
+  transition: color 0.2s ease-in-out;
+}
+
+#clearKeyBtn:hover {
+  text-decoration: underline;
+}
+
+/* Smooth transitions for form elements */
+#apiKey, #submitBtn {
+  transition: all 0.2s ease-in-out;
+}
+
