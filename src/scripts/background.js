@@ -25,9 +25,8 @@ const GEOGUESSR_ORIGIN = 'https://www.geoguessr.com/';
  * @property {number} choices.index - The index of the choice.
  */
 async function getVisionResponse(dataUrl, shortAnswer) {
-  const { apiKey, maxTokens, selectedModel } = await chrome.storage.local.get([
+  const { apiKey, selectedModel } = await chrome.storage.local.get([
     'apiKey',
-    'maxTokens',
     'selectedModel'
   ]);
 
@@ -107,7 +106,6 @@ Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do no
         ]
       }
     ],
-    max_output_tokens: maxTokens || 300,
     text: {
       format: {
         type: "json_schema",
