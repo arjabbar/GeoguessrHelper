@@ -16,7 +16,9 @@ let savedApiKey = null;
 
 // Default available models
 const availableModels = [
-  { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini (Default)' },
+  { id: 'gpt-5-mini', name: 'GPT-5-mini (Default)' },
+  { id: 'gpt-5', name: 'GPT-5' },
+  { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
   { id: 'gpt-4.1', name: 'GPT-4.1' },
   { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano' },
   { id: 'o4-mini', name: 'O4 Mini' },
@@ -26,7 +28,7 @@ const availableModels = [
 ];
 
 // Helper function to populate model dropdown
-function populateModelDropdown(selectedModel = 'gpt-4.1-mini') {
+function populateModelDropdown(selectedModel = 'gpt-5-mini') {
   // Clear existing options
   modelSelect.innerHTML = '';
   
@@ -38,11 +40,11 @@ function populateModelDropdown(selectedModel = 'gpt-4.1-mini') {
     modelSelect.appendChild(option);
   });
   
-  // Set selected model, fallback to gpt-4.1-mini
+  // Set selected model, fallback to gpt-5-mini
   if (availableModels.find(m => m.id === selectedModel)) {
     modelSelect.value = selectedModel;
   } else {
-    modelSelect.value = 'gpt-4.1-mini';
+    modelSelect.value = 'gpt-5-mini';
   }
 }
 
@@ -168,6 +170,6 @@ apiKeyForm.addEventListener('submit', function(event) {
 chrome.storage.local.get(['apiKey', 'selectedModel'], function(data) {
   updateUIState(data.apiKey);
   
-  // Set up models with saved selection or default to gpt-4.1-mini
-  populateModelDropdown(data.selectedModel || 'gpt-4.1-mini');
+  // Set up models with saved selection or default to gpt-5-mini
+  populateModelDropdown(data.selectedModel || 'gpt-5-mini');
 });
