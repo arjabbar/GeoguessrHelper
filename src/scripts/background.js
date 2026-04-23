@@ -88,7 +88,7 @@ Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do no
     : "Analyze the screenshot and reply as JSON only. No commentary.";
 
   const requestBody = JSON.stringify({
-    model: selectedModel || 'gpt-5-mini',
+    model: selectedModel || 'gpt-5.4-mini',
     input: [
       {
         role: 'system',
