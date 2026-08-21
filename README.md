@@ -11,13 +11,14 @@ Geoguessr Helper is a Chrome extension that helps improve your Geoguessr skills 
 - Capture the current state of the game with a hotkey (default: Alt+Shift+C)
 - Open a side panel to view the screenshot and the response from the OpenAI Vision API
 - Save your OpenAI API key locally
+- Pick which OpenAI model to use (defaults to GPT-5.6 Terra)
 
 ## Getting Started
 
 1. Clone this repository: `git clone https://github.com/yourusername/geoguessrhelper.git`
 2. Navigate to the project directory: `cd geoguessrhelper`
 3. Install the dependencies: `npm install`
-4. Build the project: `npm run build`
+4. Build the stylesheet: `npm run tailwind:build` (or `npm run tailwind` to watch)
 5. Load the extension into Chrome:
    - Open Chrome and navigate to `chrome://extensions`
    - Enable Developer mode (toggle switch in the top right)

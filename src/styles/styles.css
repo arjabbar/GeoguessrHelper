@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tailwind v4 scans for utility classes here instead of tailwind.config.js `content`. */
+@source "../**/*.{html,js}";
 
 @keyframes glowing {
   0% {box-shadow: 0 0 2px #33ccff, 0 0 4px #33ccff, 0 0 6px #33ccff, 0 0 8px #33ccff;}

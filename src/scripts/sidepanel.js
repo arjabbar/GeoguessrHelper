@@ -12,11 +12,13 @@ function validateApiKey(key) {
     const apiKeyIsValid = key && key.length > 36 && key.startsWith('sk-');
     Elements.status.textContent = apiKeyIsValid ? 'Open AI API Key Enabled' : "Your API Key doesn't seem to be valid. Click the extension icon to set or update it.";
     
-    Elements.statusContainer.classList.forEach(className => {
-      if (className.startsWith('bg-') || className.startsWith('text-')) {
-        Elements.statusContainer.classList.remove(className);
-      }
-    });
+    // Remove the status colors explicitly. (Looping over classList and removing as
+    // you go skips entries — classList is live — which left stale colors behind and
+    // also stripped unrelated classes like text-sm.)
+    Elements.statusContainer.classList.remove(
+      'bg-green-100', 'bg-green-200', 'text-green-800',
+      'bg-yellow-100', 'bg-yellow-200', 'text-yellow-800'
+    );
 
     Elements.statusContainer.classList.add(apiKeyIsValid ? 'bg-green-200' : 'bg-yellow-200');
     Elements.statusContainer.classList.add(apiKeyIsValid ? 'text-green-800' : 'text-yellow-800');

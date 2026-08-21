@@ -16,21 +16,19 @@ let savedApiKey = null;
 
 // Default available models
 const availableModels = [
-  { id: 'gpt-5.4-mini', name: 'GPT-5.4 Mini (Default)' },
+  { id: 'gpt-5.6-terra', name: 'GPT-5.6 Terra (Default)' },
+  { id: 'gpt-5.6-sol', name: 'GPT-5.6 Sol' },
+  { id: 'gpt-5.6-luna', name: 'GPT-5.6 Luna' },
+  { id: 'gpt-5.5', name: 'GPT-5.5' },
   { id: 'gpt-5.4', name: 'GPT-5.4' },
+  { id: 'gpt-5.4-mini', name: 'GPT-5.4 Mini' },
   { id: 'gpt-5.4-nano', name: 'GPT-5.4 Nano' },
   { id: 'gpt-5-mini', name: 'GPT-5 Mini' },
-  { id: 'gpt-5', name: 'GPT-5' },
   { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
-  { id: 'gpt-4.1', name: 'GPT-4.1' },
-  { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano' },
-  { id: 'o4-mini', name: 'O4 Mini' },
-  { id: 'o3', name: 'O3' },
-  { id: 'o3-mini', name: 'O3 Mini' },
-  { id: 'o3-pro', name: 'O3 Pro' }
+  { id: 'gpt-4.1', name: 'GPT-4.1' }
 ];
 
-const DEFAULT_MODEL = 'gpt-5.4-mini';
+const DEFAULT_MODEL = 'gpt-5.6-terra';
 
 // Helper function to populate model dropdown
 function populateModelDropdown(selectedModel = DEFAULT_MODEL) {
@@ -45,11 +43,13 @@ function populateModelDropdown(selectedModel = DEFAULT_MODEL) {
     modelSelect.appendChild(option);
   });
   
-  // Set selected model, fallback to default
+  // Set selected model, fallback to default. A previously saved model may have been
+  // retired from the list, so write the fallback back to storage too.
   if (availableModels.find(m => m.id === selectedModel)) {
     modelSelect.value = selectedModel;
   } else {
     modelSelect.value = DEFAULT_MODEL;
+    chrome.storage.local.set({ selectedModel: DEFAULT_MODEL });
   }
 }
 
