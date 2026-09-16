@@ -350,10 +350,19 @@ chrome.runtime.onMessage.addListener(async function(request, sender, sendRespons
       // its own catch and only ever adds a status field to the broadcast.
       let mapClick;
       try {
-        const coords = extractTopCoordinates(response);
-        mapClick = coords
-          ? await placeGuess(tab.id, coords)
-          : {placed: false, reason: 'no-coordinates'};
+        // Read the toggle fresh on every capture, like apiKey/selectedModel, so
+        // the hotkey path (which has no DOM to read a checkbox from) honors it
+        // too. An absent key means on, hence the explicit `=== false`.
+        const {autoPlaceMarker} = await chrome.storage.local.get(['autoPlaceMarker']);
+
+        if (autoPlaceMarker === false) {
+          mapClick = {placed: false, reason: 'disabled'};
+        } else {
+          const coords = extractTopCoordinates(response);
+          mapClick = coords
+            ? await placeGuess(tab.id, coords)
+            : {placed: false, reason: 'no-coordinates'};
+        }
       } catch (error) {
         console.error('Failed to place guess marker.', error);
         mapClick = {placed: false, reason: (error?.message || String(error))};

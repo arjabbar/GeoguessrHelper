@@ -5,6 +5,7 @@ const Elements = {
   captureButton: document.getElementById('captureButton'),
   response: document.getElementById('response'),
   mapStatus: document.getElementById('mapStatus'),
+  autoPlaceMarker: document.getElementById('autoPlaceMarker'),
   hotkey: document.getElementById('captureScreenHotkey')
 };
 const originalCaptureButtonText = captureButton.textContent;
@@ -150,6 +151,12 @@ Elements.captureButton.addEventListener('click', function() {
   chrome.runtime.sendMessage({message: "captureScreen", shortAnswer: value === 'short'});
 });
 
+// Persist on change rather than reading the checkbox at capture time, because
+// the service worker (hotkey path) has no DOM and reads the stored value.
+Elements.autoPlaceMarker.addEventListener('change', function(event) {
+  chrome.storage.local.set({autoPlaceMarker: event.target.checked});
+});
+
 // When the local storage api key is updated, update the status
 chrome.storage.onChanged.addListener(function(changes, namespace) {
   for (key in changes) {
@@ -204,5 +211,10 @@ window.onload = function() {
   
   chrome.storage.local.get('apiKey', function(data) {
     validateApiKey(data.apiKey);
+  });
+
+  // Default on: an unset key leaves the checkbox checked.
+  chrome.storage.local.get('autoPlaceMarker', function(data) {
+    Elements.autoPlaceMarker.checked = data.autoPlaceMarker !== false;
   });
 };
