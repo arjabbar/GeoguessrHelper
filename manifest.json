@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Geoguessr Helper",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "A Geoguessr helper that improves your skills and provides answers.",
   "action": {
     "default_popup": "src/popup.html",
@@ -11,8 +11,17 @@
       "128": "src/images/icon128.png"
     }
   },
-  "permissions": ["activeTab", "storage", "commands", "sidePanel", "tabs"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "commands",
+    "sidePanel",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "side_panel": {
     "default_path": "src/sidepanel.html"
   },
@@ -26,5 +35,17 @@
       },
       "description": "Look at the screen and capture the current state of the game."
     }
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.geoguessr.com/*"
+      ],
+      "js": [
+        "src/scripts/content.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
 }

@@ -20,9 +20,9 @@ Three scripts communicate solely through `chrome.runtime.sendMessage` broadcasts
 - `src/scripts/sidepanel.js` (+ `src/sidepanel.html`) — displays the screenshot and response. Listens for `startThinking`, `updateScreenshot`, and `captureResponseReceived`; parses the JSON string from background and renders it to HTML (all user-visible strings go through `escapeHtml`).
 - `src/scripts/popup.js` (+ `src/popup.html`) — settings UI. Saves `apiKey` and `selectedModel` to `chrome.storage.local` (the only shared state besides messages). The model list and `DEFAULT_MODEL` live here; background has its own `DEFAULT_MODEL` constant that must match. `popup.html` also hardcodes the same `<option>` list as a pre-render fallback — update all three together.
 
-`src/scripts/content.js` is an empty stub and is not registered in `manifest.json`.
+- `src/scripts/content.js` — MAIN-world content script on `https://www.geoguessr.com/*` at `document_start`. Wraps the `google.maps.Map` constructor (via accessor watchers on `window.google` → `maps` → `Map`, with a polling fallback) to remember every map instance, and exposes `window.__geoguessrHelperPlaceGuess(lat, lng)`, which fires a synthetic `click` on the visible guess map so Geoguessr drops its own marker. Background calls it with `chrome.scripting.executeScript({ world: 'MAIN' })` (hence the `scripting` permission) and never submits the guess.
 
-Message flow: hotkey/button → `captureScreen` → background broadcasts `startThinking` → `updateScreenshot` → `captureResponseReceived` (with `response` or `error`).
+Message flow: hotkey/button → `captureScreen` → background broadcasts `startThinking` → `updateScreenshot` → `captureResponseReceived` (with `response` or `error`) → `guessPlaced` (with `ok`, `error`, `coords`) after attempting to pin the top guess on the map. Both schemas include `coordinates` (`{lat, lng}`); coach mode uses the first guess's.
 
 ## Conventions
 

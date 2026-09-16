@@ -4,7 +4,8 @@ const Elements = {
   screenshotPreview: document.getElementById('screenshot'),
   captureButton: document.getElementById('captureButton'),
   response: document.getElementById('response'),
-  hotkey: document.getElementById('captureScreenHotkey')
+  hotkey: document.getElementById('captureScreenHotkey'),
+  pinStatus: document.getElementById('pinStatus')
 };
 const originalCaptureButtonText = captureButton.textContent;
 
@@ -38,6 +39,25 @@ function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+function formatCoordinates(coords) {
+  const lat = Number(coords?.lat);
+  const lng = Number(coords?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return '';
+  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+}
+
+// Shows whether the guess pin was dropped on the in-game map (see `guessPlaced` in background.js).
+function setPinStatus(ok, error) {
+  Elements.pinStatus.classList.remove('hidden', 'text-green-700', 'text-yellow-700');
+  if (ok) {
+    Elements.pinStatus.classList.add('text-green-700');
+    Elements.pinStatus.textContent = '📍 Guess placed on the map. Adjust it if needed, then click Guess.';
+  } else {
+    Elements.pinStatus.classList.add('text-yellow-700');
+    Elements.pinStatus.textContent = `Could not place the guess on the map: ${error || 'unknown error'}`;
+  }
+}
+
 function renderFromJson(obj) {
   const parts = [];
 
@@ -60,8 +80,10 @@ function renderFromJson(obj) {
 
       const conf = typeof g.confidence === 'number'
         ? ` <span style="opacity:.75">(${Math.round(g.confidence*100)}%)</span>` : '';
+      const coords = formatCoordinates(g.coordinates);
+      const coordsHtml = coords ? ` <span class="text-sm" style="opacity:.75">${coords}</span>` : '';
 
-      parts.push(`<li>${titleBits}${conf}`);
+      parts.push(`<li>${titleBits}${conf}${coordsHtml}`);
 
       if (g.reasons?.length) {
         parts.push(`<div><u>Why:</u><ul>${g.reasons.map(r=>`<li>${escapeHtml(r)}</li>`).join('')}</ul></div>`);
@@ -99,7 +121,9 @@ function setResponse(response) {
       obj.region ? `, ${escapeHtml(obj.region)}` : '',
       obj.country ? `, ${escapeHtml(obj.country)}` : ''
     ].join('');
-    Elements.response.innerHTML = `<p>${locationParts}</p>`;
+    const coords = formatCoordinates(obj.coordinates);
+    Elements.response.innerHTML = `<p>${locationParts}</p>` +
+      (coords ? `<p class="text-sm" style="opacity:.75">${coords}</p>` : '');
     return;
   }
 
@@ -139,6 +163,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.message === "startThinking") {
     setThinkingState(true);
     setResponse('');
+    Elements.pinStatus.classList.add('hidden');
+  }
+
+  if (request.message === "guessPlaced") {
+    setPinStatus(request.ok, request.error);
   }
 
   if (request.message === "captureResponseReceived") {

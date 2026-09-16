@@ -53,11 +53,18 @@ Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do no
   const schema = shortAnswer ? {
     type: "object",
     additionalProperties: false,
-    required: ["city", "region", "country"],
+    required: ["city", "region", "country", "coordinates"],
     properties: {
       city: { type: "string", description: "The most likely city name based on the screenshot" },
       region: { type: "string", description: "The region/state/province" },
-      country: { type: "string", description: "The country" }
+      country: { type: "string", description: "The country" },
+      coordinates: {
+        type: "object",
+        additionalProperties: false,
+        required: ["lat", "lng"],
+        description: "Best-estimate coordinates of the location, used to place the guess on the map",
+        properties: { lat: { type: "number" }, lng: { type: "number" } }
+      }
     }
   } : {
     type: "object",
@@ -95,7 +102,7 @@ Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do no
   };
 
   const userPrompt = shortAnswer
-    ? "Look at this Geoguessr screenshot and identify the most likely location. Return the city, region, and country in the JSON format without any explanations or reasoning."
+    ? "Look at this Geoguessr screenshot and identify the most likely location. Return the city, region, country, and your best-estimate latitude/longitude in the JSON format without any explanations or reasoning."
     : `Analyze the screenshot as a coach and reply as JSON only. No commentary.
 Set "mode" to "coach". Give 2-3 ranked guesses, most likely first, each with the clues you
 spotted (road markings, bollards, plates, signage/language, vegetation, architecture, sun
@@ -175,6 +182,52 @@ concrete "tips" the player can use to read scenes like this faster next time.`;
   return text;
 };
 
+/**
+ * Pulls the coordinates to pin from a parsed response: the top-level `coordinates`
+ * in short-answer mode, or the first (most likely) guess's coordinates in coach mode.
+ * Returns null when the response has no usable coordinates.
+ */
+function extractCoordinates(responseText) {
+  let obj;
+  try {
+    obj = JSON.parse(responseText);
+  } catch {
+    return null;
+  }
+  const coords = obj?.coordinates ?? obj?.guesses?.[0]?.coordinates;
+  const lat = Number(coords?.lat);
+  const lng = Number(coords?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+
+/**
+ * Asks the MAIN-world content script (src/scripts/content.js) on the Geoguessr tab to
+ * place the guess marker at the given coordinates, then broadcasts `guessPlaced` with
+ * the outcome so the side panel can show whether the pin landed.
+ */
+async function placeGuessOnMap(tabId, coords) {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: (lat, lng) => {
+        if (typeof window.__geoguessrHelperPlaceGuess !== 'function') {
+          return { ok: false, error: 'Helper script is not loaded on this tab. Reload the Geoguessr tab and try again.' };
+        }
+        return window.__geoguessrHelperPlaceGuess(lat, lng);
+      },
+      args: [coords.lat, coords.lng]
+    });
+    const result = results?.[0]?.result ?? { ok: false, error: 'No response from the Geoguessr tab.' };
+    chrome.runtime.sendMessage({ message: 'guessPlaced', ok: !!result.ok, error: result.error, coords });
+  } catch (error) {
+    console.error('Failed to place guess on map.', error);
+    chrome.runtime.sendMessage({ message: 'guessPlaced', ok: false, error: error?.message || String(error), coords });
+  }
+}
+
 function isGeoguessr(url) {
   if (!url) return false;
   try {
@@ -210,6 +263,14 @@ chrome.runtime.onMessage.addListener(async function(request, sender, sendRespons
       console.log(response);
 
       chrome.runtime.sendMessage({message: "captureResponseReceived", response});
+
+      // Drop the guess pin on the in-game map at the suggested coordinates.
+      const coords = extractCoordinates(response);
+      if (coords) {
+        await placeGuessOnMap(tab.id, coords);
+      } else {
+        chrome.runtime.sendMessage({ message: 'guessPlaced', ok: false, error: 'The response did not include coordinates.' });
+      }
     } catch (error) {
       console.error('Failed to capture screenshot.', error);
       chrome.runtime.sendMessage({message: "captureResponseReceived", error: (error?.message || error)});
