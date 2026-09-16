@@ -11,8 +11,8 @@
       "128": "src/images/icon128.png"
     }
   },
-  "permissions": ["activeTab", "storage", "commands", "sidePanel", "tabs"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": ["activeTab", "storage", "commands", "sidePanel", "tabs", "scripting"],
+  "host_permissions": ["https://www.geoguessr.com/*"],
   "side_panel": {
     "default_path": "src/sidepanel.html"
   },

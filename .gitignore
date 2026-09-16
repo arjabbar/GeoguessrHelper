@@ -94,3 +94,5 @@ ehthumbs.db
 Thumbs.db
 
 *.zip
+# Riptide artifacts (cloud-synced)
+.humanlayer/tasks/

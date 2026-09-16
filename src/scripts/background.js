@@ -186,6 +186,138 @@ function isGeoguessr(url) {
   }
 }
 
+/**
+ * Pulls the top guess's coordinates out of the raw response text.
+ *
+ * Branches on the parsed object's shape the way the side panel's `setResponse`
+ * does, rather than being told which mode produced it: coach responses carry the
+ * coordinates on `guesses[0]`, short answers carry them at the top level.
+ *
+ * @param {string} responseText - The raw JSON text broadcast as `response`.
+ * @returns {{lat: number, lng: number} | null} Null when the text is not JSON or
+ *   has no usable coordinates.
+ */
+function extractTopCoordinates(responseText) {
+  let obj;
+  try {
+    obj = JSON.parse(responseText);
+  } catch {
+    // Plain-text / legacy responses (including the "not a Geoguessr website"
+    // string) are not an error here — they just have nothing to place.
+    return null;
+  }
+
+  const coords = obj?.guesses?.[0]?.coordinates ?? obj?.coordinates;
+  if (typeof coords?.lat === 'number' && typeof coords?.lng === 'number') {
+    return { lat: coords.lat, lng: coords.lng };
+  }
+  return null;
+}
+
+/**
+ * Runs inside the Geoguessr page's MAIN world, so it can reach `window.google`
+ * and React's fiber internals.
+ *
+ * `chrome.scripting.executeScript` serializes this function, which drops every
+ * closure — it must stay fully self-contained and take only the two numbers.
+ *
+ * @param {number} lat
+ * @param {number} lng
+ * @returns {{placed: boolean, reason?: string}}
+ */
+function placeGuessInPage(lat, lng) {
+  const node =
+    document.querySelector('[class*="guess-map_canvas"]') ??
+    document.querySelector('[class*="guess-map"]');
+  if (!node) return { placed: false, reason: 'no-map' };
+
+  const fiberKey = Object.keys(node).find(k => k.startsWith('__reactFiber$'));
+  if (!fiberKey) return { placed: false, reason: 'no-fiber' };
+
+  const isMap = value =>
+    !!value &&
+    typeof value === 'object' &&
+    typeof value.panTo === 'function' &&
+    typeof value.setCenter === 'function' &&
+    (!window.google?.maps?.Map || value instanceof window.google.maps.Map);
+
+  // Geoguessr hangs the map instance on a component a few levels above the
+  // canvas node, so walk up the fiber's parent chain. The cap keeps a DOM change
+  // from turning this into a long walk to the root on every capture.
+  let map = null;
+  let fiber = node[fiberKey];
+  for (let hops = 0; fiber && hops < 25; hops++) {
+    const props = fiber.memoizedProps;
+    if (props) {
+      if (isMap(props.map)) {
+        map = props.map;
+        break;
+      }
+      const candidate = Object.values(props).find(isMap);
+      if (candidate) {
+        map = candidate;
+        break;
+      }
+    }
+    fiber = fiber.return;
+  }
+  if (!map) return { placed: false, reason: 'no-handler' };
+
+  if (!window.google?.maps?.LatLng) return { placed: false, reason: 'no-google-maps' };
+  const latLng = new window.google.maps.LatLng(lat, lng);
+
+  // Preferred path: the public Maps event API, which runs Geoguessr's own click
+  // handler exactly as a real click on the map would.
+  let clicked = false;
+  try {
+    window.google.maps.event.trigger(map, 'click', { latLng });
+    clicked = true;
+  } catch (error) {
+    console.error('Geoguessr Helper: google.maps.event.trigger failed.', error);
+  }
+
+  // Fallback: call the minified handler Geoguessr attaches to the map directly.
+  // It is the most brittle path (the name differs between game modes), so it
+  // only runs when the public API did not work.
+  if (!clicked) {
+    try {
+      map.__e3_?.click?.({ latLng });
+      clicked = true;
+    } catch (error) {
+      console.error('Geoguessr Helper: direct map click handler failed.', error);
+    }
+  }
+
+  if (!clicked) return { placed: false, reason: 'no-handler' };
+
+  // Pan so the marker is actually on screen for the user to confirm.
+  try {
+    map.panTo(latLng);
+  } catch (error) {
+    console.error('Geoguessr Helper: failed to pan the map.', error);
+  }
+
+  return { placed: true };
+}
+
+/**
+ * Injects `placeGuessInPage` into the game tab and normalizes the result.
+ *
+ * @param {number} tabId
+ * @param {{lat: number, lng: number}} coords
+ * @returns {Promise<{placed: boolean, reason?: string}>}
+ */
+async function placeGuess(tabId, { lat, lng }) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    world: 'MAIN',
+    func: placeGuessInPage,
+    args: [lat, lng]
+  });
+
+  return results?.[0]?.result ?? { placed: false, reason: 'no-result' };
+}
+
 chrome.runtime.onMessage.addListener(async function(request, sender, sendResponse) {
   console.log('background.js', request.message);
 
@@ -209,7 +341,21 @@ chrome.runtime.onMessage.addListener(async function(request, sender, sendRespons
 
       console.log(response);
 
-      chrome.runtime.sendMessage({message: "captureResponseReceived", response});
+      // Placing the marker is best-effort: a Geoguessr DOM change or a missing
+      // map must never hide the answer the user just paid for, so this step has
+      // its own catch and only ever adds a status field to the broadcast.
+      let mapClick;
+      try {
+        const coords = extractTopCoordinates(response);
+        mapClick = coords
+          ? await placeGuess(tab.id, coords)
+          : {placed: false, reason: 'no-coordinates'};
+      } catch (error) {
+        console.error('Failed to place guess marker.', error);
+        mapClick = {placed: false, reason: (error?.message || String(error))};
+      }
+
+      chrome.runtime.sendMessage({message: "captureResponseReceived", response, mapClick});
     } catch (error) {
       console.error('Failed to capture screenshot.', error);
       chrome.runtime.sendMessage({message: "captureResponseReceived", error: (error?.message || error)});
