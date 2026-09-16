@@ -53,11 +53,15 @@ Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do no
   const schema = shortAnswer ? {
     type: "object",
     additionalProperties: false,
-    required: ["city", "region", "country"],
+    required: ["city", "region", "country", "coordinates"],
     properties: {
       city: { type: "string", description: "The most likely city name based on the screenshot" },
       region: { type: "string", description: "The region/state/province" },
-      country: { type: "string", description: "The country" }
+      country: { type: "string", description: "The country" },
+      // Not rendered by the side panel; used to place the guess marker on the map.
+      coordinates:{ type: "object", additionalProperties:false, required:["lat","lng"], properties:{
+        lat:{type:"number"}, lng:{type:"number"}
+      }}
     }
   } : {
     type: "object",
@@ -95,7 +99,7 @@ Return ONLY valid JSON that strictly conforms to the provided JSON Schema. Do no
   };
 
   const userPrompt = shortAnswer
-    ? "Look at this Geoguessr screenshot and identify the most likely location. Return the city, region, and country in the JSON format without any explanations or reasoning."
+    ? "Look at this Geoguessr screenshot and identify the most likely location. Return the city, region, and country in the JSON format without any explanations or reasoning. Also return the best-guess coordinates of that location as decimal degrees in \"coordinates\"."
     : `Analyze the screenshot as a coach and reply as JSON only. No commentary.
 Set "mode" to "coach". Give 2-3 ranked guesses, most likely first, each with the clues you
 spotted (road markings, bollards, plates, signage/language, vegetation, architecture, sun
