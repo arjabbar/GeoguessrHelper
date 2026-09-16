@@ -24,13 +24,20 @@
         <label for="answer-thorough" class="block text-sm font-medium leading-6 text-gray-900 inline-block ml-1">Explain Thoroughly</label>
       </div>
     </div>
-    
+
+    <div class="inline-flex items-center mt-2">
+      <input id="autoPlaceMarker" type="checkbox" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600 inline-block" checked>
+      <label for="autoPlaceMarker" class="block text-sm font-medium leading-6 text-gray-900 inline-block ml-1">Place marker on map</label>
+    </div>
+
     <button id="captureButton" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2">Help me Out</button>
     <p class="text-sm text-gray-500 mt-2">Hint: You can also press <span id="captureScreenHotkey">Alt+Shift+C</span> to trigger this action.</p>
     
     <div class="max-w-sm rounded overflow-hidden shadow-lg bg-white p-4 mt-4 w-full flex-grow overflow-y-auto">
       <p id="response" class="text-gray-700 text-base"></p>
     </div>
+
+    <div id="mapStatus" class="w-full mt-2 inline-flex items-center px-3 py-0.5 text-sm font-medium"></div>
     
     <script src="scripts/sidepanel.js"></script>
   </body>

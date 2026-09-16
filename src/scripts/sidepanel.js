@@ -4,6 +4,8 @@ const Elements = {
   screenshotPreview: document.getElementById('screenshot'),
   captureButton: document.getElementById('captureButton'),
   response: document.getElementById('response'),
+  mapStatus: document.getElementById('mapStatus'),
+  autoPlaceMarker: document.getElementById('autoPlaceMarker'),
   hotkey: document.getElementById('captureScreenHotkey')
 };
 const originalCaptureButtonText = captureButton.textContent;
@@ -81,6 +83,35 @@ function renderFromJson(obj) {
   return parts.join('\n');
 }
 
+/**
+ * Renders the outcome of the guess-map marker placement as a one-line pill,
+ * reusing the same green/yellow classes as the API key status.
+ *
+ * @param {{placed: boolean, reason?: string} | undefined} mapClick - Absent on
+ *   messages from an older build, in which case the pill is cleared.
+ */
+function setMapClickStatus(mapClick) {
+  Elements.mapStatus.classList.remove(
+    'bg-green-200', 'text-green-800',
+    'bg-yellow-200', 'text-yellow-800'
+  );
+
+  if (!mapClick) {
+    Elements.mapStatus.textContent = '';
+    return;
+  }
+
+  const text = mapClick.placed
+    ? 'Marker placed on the guess map'
+    : (mapClick.reason === 'no-map'
+        ? 'No guess map found on this page'
+        : `Marker not placed: ${mapClick.reason || 'unknown'}`);
+
+  Elements.mapStatus.innerHTML = escapeHtml(text);
+  Elements.mapStatus.classList.add(mapClick.placed ? 'bg-green-200' : 'bg-yellow-200');
+  Elements.mapStatus.classList.add(mapClick.placed ? 'text-green-800' : 'text-yellow-800');
+}
+
 function setResponse(response) {
   if (!response) { Elements.response.innerHTML = ''; return; }
 
@@ -120,6 +151,12 @@ Elements.captureButton.addEventListener('click', function() {
   chrome.runtime.sendMessage({message: "captureScreen", shortAnswer: value === 'short'});
 });
 
+// Persist on change rather than reading the checkbox at capture time, because
+// the service worker (hotkey path) has no DOM and reads the stored value.
+Elements.autoPlaceMarker.addEventListener('change', function(event) {
+  chrome.storage.local.set({autoPlaceMarker: event.target.checked});
+});
+
 // When the local storage api key is updated, update the status
 chrome.storage.onChanged.addListener(function(changes, namespace) {
   for (key in changes) {
@@ -139,6 +176,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.message === "startThinking") {
     setThinkingState(true);
     setResponse('');
+    setMapClickStatus(undefined);
   }
 
   if (request.message === "captureResponseReceived") {
@@ -151,6 +189,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.error) {
       setResponse(`Failed to capture screenshot with error: ${request.error}`);
     }
+
+    setMapClickStatus(request.mapClick);
   }
 });
 
@@ -171,5 +211,10 @@ window.onload = function() {
   
   chrome.storage.local.get('apiKey', function(data) {
     validateApiKey(data.apiKey);
+  });
+
+  // Default on: an unset key leaves the checkbox checked.
+  chrome.storage.local.get('autoPlaceMarker', function(data) {
+    Elements.autoPlaceMarker.checked = data.autoPlaceMarker !== false;
   });
 };
